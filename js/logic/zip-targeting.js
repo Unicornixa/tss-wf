@@ -65,21 +65,6 @@
     console.log("[zip]", cleanZip, "→ Target Geo:", status);
   }
   
-  zipInput.addEventListener("keydown", function(e) {
-    const allowedKeys = [
-      "Backspace",
-      "Delete",
-      "ArrowLeft",
-      "ArrowRight",
-      "Tab"
-    ];
-  
-    if (allowedKeys.includes(e.key)) return;
-    if (!/^\d$/.test(e.key)) {
-      e.preventDefault();
-    }
-  });
-  
   zipInput.addEventListener("input", updateTargetGeo);
 
   form.addEventListener(
