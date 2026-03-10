@@ -1,5 +1,5 @@
 Webflow.push(function() {
-  const form = document.querySelector('[data-form="form"]');
+  const form = document.querySelector('[data-form="multistep"]');
   const input = document.querySelector("#Phone");
 
   if (input) {
