@@ -1,82 +1,60 @@
-Webflow.push(function() {
-
+Webflow.push(function () {
+  const form = document.querySelector('[data-form="multistep"]');
   const zipInput = document.querySelector('[data-form-field="zip"]');
-  if (!zipInput) return;
+  if (!zipInput || !form) return;
 
   const ERROR_MESSAGE = "Sélectionnez un code postal français à 5 chiffres";
 
-  function getStep() {
-    return zipInput.closest('[data-form="step"]');
-  }
+  const zipWrapper =
+    zipInput.closest(".form_field-wrapper") ||
+    zipInput.closest('[data-form="step"]');
 
-  function getErrorWrapper() {
-    const step = getStep();
-    return step?.querySelector('[error-msg="zip"]');
-  }
+  const errorWrapper =
+    zipWrapper?.querySelector('[error-msg="zip"]') ||
+    zipWrapper?.querySelector('[data-text="error-message"]');
 
-  function getNextButton() {
-    const step = getStep();
-    return step?.querySelector('[data-form="next-btn"]');
-  }
+  const errorTextElement =
+    errorWrapper?.querySelector('[data-error-text]') ||
+    errorWrapper?.querySelector('div:last-child');
 
-  function showError(message) {
-    const wrapper = getErrorWrapper();
-    const text = wrapper?.querySelector('[data-error-text]');
-
-    if (wrapper && text) {
-      text.textContent = message;
-      wrapper.style.display = "flex";
+  function showZipError(message) {
+    if (errorWrapper && errorTextElement) {
+      errorTextElement.textContent = message;
+      errorWrapper.style.display = "flex";
     }
   }
 
-  function hideError() {
-    const wrapper = getErrorWrapper();
-    if (wrapper) wrapper.style.display = "none";
-  }
-
-  function setButtonState(valid) {
-    const btn = getNextButton();
-    if (!btn) return;
-
-    if (valid) {
-      btn.classList.remove("disabled");
-      btn.style.pointerEvents = "auto";
-      btn.style.opacity = "1";
-    } else {
-      btn.classList.add("disabled");
-      btn.style.pointerEvents = "none";
-      btn.style.opacity = "0.4";
+  function hideZipError() {
+    if (errorWrapper) {
+      errorWrapper.style.display = "none";
     }
   }
 
-  function isValidZip() {
-    const value = zipInput.value.replace(/\D/g, "");
-    return value.length === 5;
+  function isValidZip(value) {
+    const clean = (value || "").replace(/\D/g, "");
+    return clean.length === 5;
   }
 
-  window.zipValidation = function() {
+  window.zipValidation = function () {
+    const zipValue = zipInput.value || "";
 
-    if (!isValidZip()) {
-
-      showError(ERROR_MESSAGE);
+    if (!isValidZip(zipValue)) {
+      showZipError(ERROR_MESSAGE);
 
       if (window.unfilledArr) {
         window.unfilledArr = window.unfilledArr.filter(
           item => item.input !== zipInput.name
         );
-
         window.unfilledArr.push({
           input: zipInput.name,
           customError: ERROR_MESSAGE
         });
       }
 
-      setButtonState(false);
-
       return false;
     }
 
-    hideError();
+    hideZipError();
 
     if (window.unfilledArr) {
       window.unfilledArr = window.unfilledArr.filter(
@@ -84,23 +62,42 @@ Webflow.push(function() {
       );
     }
 
-    setButtonState(true);
-
     return true;
   };
 
-  zipInput.addEventListener("input", function() {
-    if (zipInput.value.length >= 1) {
+  zipInput.addEventListener("input", function () {
+    // keep only numbers
+    this.value = this.value.replace(/\D/g, "").slice(0, 5);
+
+    if (this.value.length > 0 || form.dataset.submitAttempted) {
       window.zipValidation();
     }
   });
 
-  zipInput.addEventListener("blur", function() {
+  zipInput.addEventListener("blur", function () {
     window.zipValidation();
   });
 
-  document.addEventListener("formlyValidation", function() {
-    window.zipValidation();
-  });
+  const zipStep = zipInput.closest('[data-form="step"]');
+  const zipNextButton = zipStep?.querySelector('[data-form="next-btn"]');
 
+  if (zipNextButton) {
+    zipNextButton.addEventListener(
+      "click",
+      function () {
+        if (!window.zipValidation()) {
+          setTimeout(() => {
+            window.zipValidation();
+          }, 0);
+        }
+      },
+      true
+    );
+  }
+
+  document.addEventListener("formlyValidation", function () {
+    if (zipInput.value || form.dataset.submitAttempted) {
+      window.zipValidation();
+    }
+  });
 });
