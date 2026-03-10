@@ -22,7 +22,7 @@
   dropdown.style.background = "#fff";
   dropdown.style.border = "1px solid #ddd";
   dropdown.style.borderRadius = "8px";
-  dropdown.style.marginTop = "8px";
+  dropdown.style.marginTop = "4px";
   dropdown.style.width = "100%";
   dropdown.style.maxHeight = "200px";
   dropdown.style.overflowY = "auto";
