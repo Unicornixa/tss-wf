@@ -1,6 +1,8 @@
 (async function () {
   console.log("test");
 
+  console.log("test main");
+  
   const ZIP_DATA_URL =
   "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@latest/data/fr-zip-target-map.json";
 
