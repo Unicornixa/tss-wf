@@ -1,6 +1,6 @@
 (function () {
 
-  const form = document.querySelector('[data-form="form"]');
+  const form = document.querySelector('[data-form="multistep"]');
   if (!form) return;
 
   let formRedirectUrl = "/demande-de-tarifs/merci";
