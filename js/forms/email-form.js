@@ -19,7 +19,7 @@
   }
 
   async function initEmailForm() {
-    const form = document.querySelector('data-form="multistep"');
+    const form = document.querySelector('[data-form="multistep"]');
     if (!form) return;
 
     let formRedirectUrl = "/demande-de-tarifs/merci";
