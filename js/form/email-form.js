@@ -1,6 +1,5 @@
 (function () {
-  const REF = "58b3eeb"
-  const BASE = "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@${REF}/js";
+  const BASE = "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@$main/js";
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
