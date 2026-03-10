@@ -20,7 +20,12 @@
 
   async function initEmailForm() {
     const form = document.querySelector('[data-form="multistep"]');
-    if (!form) return;
+    if (!form) {
+      console.warn("[email form] Form not found");
+      return;
+    }
+
+    console.log("[email form] Form found:", form);
 
     let formRedirectUrl = "/demande-de-tarifs/merci";
 
@@ -70,12 +75,16 @@
       const select = form.querySelector('select[name="Niveau"]');
       if (select) return select.value;
 
+      const generic = form.querySelector('[name="Niveau"]');
+      if (generic) return generic.value;
+
       return "";
     }
 
     function updateExcludeReason() {
       const level = getLevel();
       excludeField.value = level === "Supérieur" ? "Supérieur" : "";
+      console.log("[email form] Exclude reason:", excludeField.value || "(empty)");
     }
 
     const levelInputs = form.querySelectorAll('[name="Niveau"]');
@@ -83,36 +92,76 @@
       input.addEventListener("change", updateExcludeReason);
     });
 
-    form.addEventListener(
-      "submit",
-      function () {
-        const targetGeo =
-          form.querySelector('[name="Target Geo"]')?.value || "";
+    $(form).on("submit", function () {
+      console.log("Form submitted");
 
-        updateExcludeReason();
+      updateExcludeReason();
 
-        const email = form.querySelector('input[type="email"]')?.value;
-        const phoneFull = form.querySelector("#FullPhone")?.value;
-        const firstName = form.querySelector('input[name="Pr-nom"]')?.value;
-        const lastName = form.querySelector('input[name="Nom"]')?.value;
+      const $form = $(this);
 
-        if (email) sessionStorage.setItem("email", email);
-        if (phoneFull) sessionStorage.setItem("fullPhone", phoneFull);
-        if (firstName) sessionStorage.setItem("firstName", firstName);
-        if (lastName) sessionStorage.setItem("lastName", lastName);
+      const email = $form.find('input[type="email"]').val();
+      const phoneFull = $form.find("#FullPhone").val();
+      const firstName = $form.find('input[name="Pr-nom"]').val();
+      const lastName = $form.find('input[name="Nom"]').val();
 
-        if (targetGeo === "FALSE" || excludeField.value) {
-          formRedirectUrl = "/demande-de-tarifs/nsq";
-          console.log("[email form] NSQ override applied");
+      const targetGeo = $form.find('[name="Target Geo"]').val() || "";
+      const excludeReason = $form.find('[name="Exclude reason"]').val() || "";
+
+      console.log("[email form] Target Geo:", targetGeo);
+      console.log("[email form] Exclude reason:", excludeReason);
+
+      // New exclusion logic overrides old redirect rules
+      if (targetGeo === "FALSE" || excludeReason) {
+        formRedirectUrl = "/demande-de-tarifs/nsq";
+        console.log("[email form] NSQ override applied");
+      }
+
+      // Save values to sessionStorage
+      if (email) {
+        sessionStorage.setItem("email", email);
+        console.log("[sessionStorage] Saved email:", email);
+      }
+      if (phoneFull) {
+        sessionStorage.setItem("fullPhone", phoneFull);
+        console.log("[sessionStorage] Saved full phone:", phoneFull);
+      }
+      if (firstName) {
+        sessionStorage.setItem("firstName", firstName);
+        console.log("[sessionStorage] Saved first name:", firstName);
+      }
+      if (lastName) {
+        sessionStorage.setItem("lastName", lastName);
+        console.log("[sessionStorage] Saved last name:", lastName);
+      }
+
+      // Build redirect URL (fallback to URL param if sessionStorage is blocked)
+      let finalRedirect = formRedirectUrl;
+
+      try {
+        sessionStorage.setItem("storage_test", "1");
+        sessionStorage.removeItem("storage_test");
+        console.log("sessionStorage working normally");
+      } catch (error) {
+        if (email) {
+          finalRedirect += `?email=${encodeURIComponent(email)}`;
+          console.log("sessionStorage blocked, adding email to URL:", finalRedirect);
         }
+      }
 
-        setTimeout(function () {
-          console.log("[email form] redirecting to:", formRedirectUrl);
-          window.location.href = formRedirectUrl;
-        }, 900);
-      },
-      true
-    );
+      // Keep redirect attrs updated too
+      $form.attr("redirect", finalRedirect);
+      $form.attr("data-redirect", finalRedirect);
+      $form.data("redirect", finalRedirect);
+
+      // Timeout before redirect
+      console.log("Setting timeout for redirect to:", finalRedirect);
+      setTimeout(function () {
+        console.log("Executing redirect to:", finalRedirect);
+        window.location.href = finalRedirect;
+      }, 1000);
+    });
+
+    console.log("[email form] Initialization complete");
   }
 
   Promise.all([
