@@ -165,11 +165,11 @@
   }
 
   Promise.all([
-    loadScript(`${BASE}/validation/phone-validation.js`),
-    loadScript(`${BASE}/validation/email-validation.js`),
-    loadScript(`${BASE}/validation/zip-validation.js`),
-    loadScript(`${BASE}/logic/zip-targeting.js`),
-    loadScript(`${BASE}/logic/zip-dropdown.js`)
+    loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@main/js/validation/phone-validation.js`),
+    loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@main/js/validation/email-validation.js`),
+    loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@58b3eeb/js/validation/zip-validation.js`),
+    loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@main/js/logic/zip-targeting.js`),
+    loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@main/js/logic/zip-dropdown.js`)
   ])
     .then(() => {
       initEmailForm();
