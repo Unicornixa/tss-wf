@@ -135,8 +135,8 @@
     loadScript(`${BASE}/validation/email-validation.js`),
     loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@58b3eeb/js/validation/zip-validation.js`),
     loadScript(`${BASE}/validation/dob-validation.js`),
-    loadScript(`${BASE}/logic/zip-targeting.js`),
-    loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@4b578b6/js/logic/zip-dropdown.js`)
+    loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@027cadf/js/logic/zip-targeting.js`),
+    loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@98203cd/js/logic/zip-dropdown.js`)
   ])
     .then(() => {
       initJobForm();
