@@ -168,8 +168,8 @@
     loadScript(`${BASE}/validation/phone-validation.js`),
     loadScript(`${BASE}/validation/email-validation.js`),
     loadScript(`${BASE}/validation/zip-validation.js`),
-    loadScript(`${BASE}/js/logic/zip-targeting.js`),
-    loadScript(`${BASE}/js/logic/zip-dropdown.js`)
+    loadScript(`${BASE}/logic/zip-targeting.js`),
+    loadScript(`${BASE}/logic/zip-dropdown.js`)
   ])
     .then(() => {
       initEmailForm();
