@@ -1,40 +1,70 @@
-document.addEventListener('DOMContentLoaded', function () {
+(async function () {
+  const LOG_PREFIX = "[time-to-call]";
+  const PARIS_TIMEZONE = "Europe/Paris";
+
   const dropdown = document.querySelector('[data-dropdown="time_to_call"]');
+  console.log(LOG_PREFIX, "dropdown found:", dropdown);
+
   if (!dropdown) return;
 
-  const items = Array.from(dropdown.querySelectorAll('.w-dyn-item'));
+  const form = dropdown.closest("form");
+  console.log(LOG_PREFIX, "form found:", form);
+
+  if (!form) return;
+
+  const items = Array.from(dropdown.querySelectorAll(".w-dyn-item"));
+  console.log(LOG_PREFIX, "items found:", items.length, items);
+
   if (!items.length) return;
 
-  const hiddenLabel = document.getElementById('time-to-call-label');
-  const hiddenValue = document.getElementById('time-to-call-value');
-  const hiddenStart = document.getElementById('time-to-call-start');
-  const hiddenEnd = document.getElementById('time-to-call-end');
-  const hiddenTimezone = document.getElementById('time-to-call-timezone');
+  function getOrCreateHiddenField(name, id) {
+    let field = form.querySelector(`[name="${name}"]`);
 
-  const PARIS_TIMEZONE = 'Europe/Paris';
+    if (!field) {
+      field = document.createElement("input");
+      field.type = "hidden";
+      field.name = name;
+      if (id) field.id = id;
+      form.appendChild(field);
+      console.log(LOG_PREFIX, `created hidden field: ${name}`);
+    } else {
+      console.log(LOG_PREFIX, `found existing hidden field: ${name}`, field);
+    }
+
+    return field;
+  }
+
+  const timeToCallLabelField = getOrCreateHiddenField("TimeToCallLabel", "time-to-call-label");
+  const timeToCallValueField = getOrCreateHiddenField("TimeToCallValue", "time-to-call-value");
+  const timeToCallStartField = getOrCreateHiddenField("TimeToCallStart", "time-to-call-start");
+  const timeToCallEndField = getOrCreateHiddenField("TimeToCallEnd", "time-to-call-end");
+  const timeToCallTimezoneField = getOrCreateHiddenField("TimeToCallTimezone", "time-to-call-timezone");
 
   function getParisNowParts() {
     const now = new Date();
-    const formatter = new Intl.DateTimeFormat('en-CA', {
+
+    const formatter = new Intl.DateTimeFormat("en-CA", {
       timeZone: PARIS_TIMEZONE,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      weekday: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23'
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23"
     });
 
     const parts = formatter.formatToParts(now);
     const map = {};
 
     parts.forEach((part) => {
-      if (part.type !== 'literal') map[part.type] = part.value;
+      if (part.type !== "literal") {
+        map[part.type] = part.value;
+      }
     });
 
-    return {
+    const result = {
       year: Number(map.year),
       month: Number(map.month),
       day: Number(map.day),
@@ -43,6 +73,9 @@ document.addEventListener('DOMContentLoaded', function () {
       second: Number(map.second),
       weekdayShort: map.weekday
     };
+
+    console.log(LOG_PREFIX, "paris now parts:", result);
+    return result;
   }
 
   function getParisWeekdayIndex(weekdayShort) {
@@ -55,11 +88,29 @@ document.addEventListener('DOMContentLoaded', function () {
       Fri: 5,
       Sat: 6
     };
-    return map[weekdayShort];
+
+    const weekdayIndex = map[weekdayShort];
+    console.log(LOG_PREFIX, "weekday mapping:", weekdayShort, "->", weekdayIndex);
+    return weekdayIndex;
+  }
+
+  function getAllowedDayGroups(weekdayIndex) {
+    let groups = [];
+
+    if (weekdayIndex >= 1 && weekdayIndex <= 4) {
+      groups = ["asap", "today", "tomorrow"];
+    } else if (weekdayIndex === 5) {
+      groups = ["asap", "today", "monday"];
+    } else {
+      groups = ["asap", "monday", "tuesday"];
+    }
+
+    console.log(LOG_PREFIX, "allowed day groups:", groups);
+    return groups;
   }
 
   function pad(num) {
-    return String(num).padStart(2, '0');
+    return String(num).padStart(2, "0");
   }
 
   function getIsoDate(year, month, day) {
@@ -70,30 +121,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const utcDate = new Date(Date.UTC(year, month - 1, day));
     utcDate.setUTCDate(utcDate.getUTCDate() + daysToAdd);
 
-    return {
+    const result = {
       year: utcDate.getUTCFullYear(),
       month: utcDate.getUTCMonth() + 1,
       day: utcDate.getUTCDate()
     };
-  }
 
-  function getAllowedDayGroups(weekdayIndex) {
-    // 0 = Sun, 1 = Mon, ... 6 = Sat
-    if (weekdayIndex >= 1 && weekdayIndex <= 4) {
-      return ['asap', 'today', 'tomorrow'];
-    }
-
-    if (weekdayIndex === 5) {
-      return ['asap', 'today', 'monday'];
-    }
-
-    return ['asap', 'monday', 'tuesday'];
+    console.log(LOG_PREFIX, "addDaysToDateParts:", { year, month, day, daysToAdd, result });
+    return result;
   }
 
   function getTargetDateForDayGroup(dayGroup, parisNow) {
     const weekdayIndex = getParisWeekdayIndex(parisNow.weekdayShort);
 
-    if (dayGroup === 'today') {
+    if (dayGroup === "today") {
       return {
         year: parisNow.year,
         month: parisNow.month,
@@ -101,16 +142,16 @@ document.addEventListener('DOMContentLoaded', function () {
       };
     }
 
-    if (dayGroup === 'tomorrow') {
+    if (dayGroup === "tomorrow") {
       return addDaysToDateParts(parisNow.year, parisNow.month, parisNow.day, 1);
     }
 
-    if (dayGroup === 'monday') {
+    if (dayGroup === "monday") {
       const daysUntilMonday = weekdayIndex === 0 ? 1 : (8 - weekdayIndex) % 7;
       return addDaysToDateParts(parisNow.year, parisNow.month, parisNow.day, daysUntilMonday);
     }
 
-    if (dayGroup === 'tuesday') {
+    if (dayGroup === "tuesday") {
       let daysUntilTuesday = (2 - weekdayIndex + 7) % 7;
       if (daysUntilTuesday === 0) daysUntilTuesday = 7;
       return addDaysToDateParts(parisNow.year, parisNow.month, parisNow.day, daysUntilTuesday);
@@ -120,44 +161,85 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function buildLocalDateTime(dateParts, timeString) {
-    if (!dateParts || !timeString) return '';
+    if (!dateParts || !timeString) return "";
     return `${getIsoDate(dateParts.year, dateParts.month, dateParts.day)}T${timeString}:00`;
   }
 
   function timeStringToMinutes(timeString) {
     if (!timeString) return null;
-    const [hours, minutes] = timeString.split(':').map(Number);
-    return hours * 60 + minutes;
+
+    const [hours, minutes] = timeString.split(":").map(Number);
+    return (hours * 60) + minutes;
   }
 
   function getCurrentParisMinutes(parisNow) {
-    return parisNow.hour * 60 + parisNow.minute;
+    const result = (parisNow.hour * 60) + parisNow.minute;
+    console.log(LOG_PREFIX, "current paris minutes:", result);
+    return result;
   }
 
-  function setHiddenFields(label, value, start, end) {
-    if (hiddenLabel) hiddenLabel.value = label || '';
-    if (hiddenValue) hiddenValue.value = value || '';
-    if (hiddenStart) hiddenStart.value = start || '';
-    if (hiddenEnd) hiddenEnd.value = end || '';
-    if (hiddenTimezone) hiddenTimezone.value = PARIS_TIMEZONE;
+  function setHiddenFields({ label, value, start, end }) {
+    timeToCallLabelField.value = label || "";
+    timeToCallValueField.value = value || "";
+    timeToCallStartField.value = start || "";
+    timeToCallEndField.value = end || "";
+    timeToCallTimezoneField.value = PARIS_TIMEZONE;
+
+    console.log(LOG_PREFIX, "hidden fields set:", {
+      label: timeToCallLabelField.value,
+      value: timeToCallValueField.value,
+      start: timeToCallStartField.value,
+      end: timeToCallEndField.value,
+      timezone: timeToCallTimezoneField.value
+    });
+  }
+
+  function showItem(item) {
+    item.hidden = false;
+    item.style.display = "";
+  }
+
+  function hideItem(item) {
+    item.hidden = true;
+    item.style.display = "none";
   }
 
   function applyFiltering() {
+    console.log(LOG_PREFIX, "applying filtering...");
+
     const parisNow = getParisNowParts();
     const weekdayIndex = getParisWeekdayIndex(parisNow.weekdayShort);
     const allowedGroups = getAllowedDayGroups(weekdayIndex);
     const currentParisMinutes = getCurrentParisMinutes(parisNow);
 
-    items.forEach((item) => {
-      const dayGroup = item.dataset.dayGroup || '';
-      const start = item.dataset.start || '';
-      const end = item.dataset.end || '';
+    items.forEach((item, index) => {
+      const label = item.dataset.label || "";
+      const value = item.dataset.value || "";
+      const dayGroup = item.dataset.dayGroup || "";
+      const start = item.dataset.start || "";
+      const end = item.dataset.end || "";
 
       let shouldShow = allowedGroups.includes(dayGroup);
 
-      // Hide expired "today" slots once the slot END time has passed.
-      if (shouldShow && dayGroup === 'today' && end) {
+      console.log(LOG_PREFIX, `item ${index + 1} before filtering:`, {
+        label,
+        value,
+        dayGroup,
+        start,
+        end,
+        shouldShowInitial: shouldShow
+      });
+
+      // For "today" options, hide slot if its END time has already passed
+      if (shouldShow && dayGroup === "today" && end) {
         const slotEndMinutes = timeStringToMinutes(end);
+
+        console.log(LOG_PREFIX, `item ${index + 1} today end-time check:`, {
+          label,
+          slotEndMinutes,
+          currentParisMinutes
+        });
+
         if (slotEndMinutes !== null && slotEndMinutes <= currentParisMinutes) {
           shouldShow = false;
         }
@@ -166,59 +248,120 @@ document.addEventListener('DOMContentLoaded', function () {
       if (shouldShow) {
         const targetDate = getTargetDateForDayGroup(dayGroup, parisNow);
 
-        if (dayGroup === 'asap') {
-          item.dataset.isoStart = '';
-          item.dataset.isoEnd = '';
+        if (dayGroup === "asap") {
+          item.dataset.isoStart = "";
+          item.dataset.isoEnd = "";
         } else {
           item.dataset.isoStart = buildLocalDateTime(targetDate, start);
           item.dataset.isoEnd = buildLocalDateTime(targetDate, end);
         }
 
-        item.hidden = false;
-        item.style.display = '';
+        showItem(item);
+
+        console.log(LOG_PREFIX, `SHOW item ${index + 1}:`, {
+          label,
+          value,
+          dayGroup,
+          isoStart: item.dataset.isoStart,
+          isoEnd: item.dataset.isoEnd
+        });
       } else {
-        item.dataset.isoStart = '';
-        item.dataset.isoEnd = '';
-        item.hidden = true;
-        item.style.display = 'none';
+        item.dataset.isoStart = "";
+        item.dataset.isoEnd = "";
+        hideItem(item);
+
+        console.log(LOG_PREFIX, `HIDE item ${index + 1}:`, {
+          label,
+          value,
+          dayGroup
+        });
       }
+    });
+
+    const visibleItems = items.filter((item) => item.style.display !== "none");
+    console.log(LOG_PREFIX, "visible items after filtering:", visibleItems.length, visibleItems);
+  }
+
+  function getDefaultItem() {
+    const asapItem = items.find(
+      (item) => !item.hidden && item.dataset.value === "asap"
+    );
+
+    if (asapItem) {
+      console.log(LOG_PREFIX, "default item: ASAP", asapItem);
+      return asapItem;
+    }
+
+    const firstVisibleItem = items.find((item) => !item.hidden) || null;
+    console.log(LOG_PREFIX, "default item fallback:", firstVisibleItem);
+    return firstVisibleItem;
+  }
+
+  function updateFieldsFromItem(item) {
+    if (!item) return;
+
+    setHiddenFields({
+      label: item.dataset.label || "",
+      value: item.dataset.value || "",
+      start: item.dataset.isoStart || "",
+      end: item.dataset.isoEnd || ""
     });
   }
 
-  function setDefaultHiddenValues() {
-    const asapItem = items.find(
-      (item) => !item.hidden && item.dataset.value === 'asap'
-    );
-
-    if (!asapItem) return;
-
-    setHiddenFields(
-      asapItem.dataset.label || 'Appelez-moi dès que possible',
-      asapItem.dataset.value || 'asap',
-      '',
-      ''
-    );
-  }
-
   function bindSelectionHandlers() {
-    items.forEach((item) => {
-      const link = item.querySelector('.m_form_dropdown-link');
-      if (!link) return;
+    console.log(LOG_PREFIX, "binding selection handlers...");
 
-      link.addEventListener('click', function () {
-        if (item.hidden || item.style.display === 'none') return;
+    items.forEach((item, index) => {
+      const link = item.querySelector(".m_form_dropdown-link");
 
-        setHiddenFields(
-          item.dataset.label || '',
-          item.dataset.value || '',
-          item.dataset.isoStart || '',
-          item.dataset.isoEnd || ''
-        );
+      if (!link) {
+        console.warn(LOG_PREFIX, `item ${index + 1} has no .m_form_dropdown-link`, item);
+        return;
+      }
+
+      link.addEventListener("click", function () {
+        console.log(LOG_PREFIX, `click item ${index + 1}:`, {
+          label: item.dataset.label,
+          value: item.dataset.value,
+          hidden: item.hidden,
+          display: item.style.display,
+          isoStart: item.dataset.isoStart,
+          isoEnd: item.dataset.isoEnd
+        });
+
+        if (item.hidden || item.style.display === "none") {
+          console.log(LOG_PREFIX, "click ignored because item is hidden");
+          return;
+        }
+
+        updateFieldsFromItem(item);
       });
     });
   }
 
+  function initializeDefaultFields() {
+    const defaultItem = getDefaultItem();
+
+    if (!defaultItem) {
+      console.warn(LOG_PREFIX, "no default item found after filtering");
+      return;
+    }
+
+    updateFieldsFromItem(defaultItem);
+  }
+
   applyFiltering();
-  setDefaultHiddenValues();
+  initializeDefaultFields();
   bindSelectionHandlers();
-});
+
+  window.timeToCallDebug = {
+    dropdown,
+    form,
+    items,
+    applyFiltering,
+    initializeDefaultFields,
+    updateFieldsFromItem
+  };
+
+  console.log(LOG_PREFIX, "debug helper available as window.timeToCallDebug");
+})();
