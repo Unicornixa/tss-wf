@@ -219,7 +219,8 @@
     loadScript(`${BASE}/validation/email-validation.js`),
     loadScript(`${BASE}/validation/zip-validation.js`),
     loadScript(`${BASE}/logic/zip-targeting.js`),
-    loadScript(`${BASE}/logic/zip-dropdown.js`)
+    loadScript(`${BASE}/logic/zip-dropdown.js`),
+    loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@bfdf9ae/js/logic/time-to-call-filter.js`)
   ])
     .then(() => {
       initEmailForm();
