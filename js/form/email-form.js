@@ -110,7 +110,7 @@
       const timeToCallEnd = $form.find('#time-to-call-end').val() || "";
       const timeToCallTimezone = $form.find('#time-to-call-timezone').val() || "";
 
-      const zip = $form.find('[data-form-field="zip"]').val() || "";
+      const zip = $form.find('input[data-form-field="zip"]').val() || "";
 
       const targetGeo = $form.find('[name="Target Geo"]').val() || "";
       const excludeReason = $form.find('[name="Exclude reason"]').val() || "";
