@@ -110,6 +110,8 @@
       const timeToCallEnd = $form.find('#time-to-call-end').val() || "";
       const timeToCallTimezone = $form.find('#time-to-call-timezone').val() || "";
 
+      const zip = $form.find('[data-form-field="zip"]').val() || "";
+
       const targetGeo = $form.find('[name="Target Geo"]').val() || "";
       const excludeReason = $form.find('[name="Exclude reason"]').val() || "";
 
@@ -120,6 +122,7 @@
       console.log("[email form] TimeToCallStart:", timeToCallStart);
       console.log("[email form] TimeToCallEnd:", timeToCallEnd);
       console.log("[email form] TimeToCallTimezone:", timeToCallTimezone);
+      console.log("[email form] Zip:", zip);
 
       // New exclusion logic overrides old redirect rules
       if (targetGeo === "FALSE" || excludeReason) {
@@ -163,6 +166,10 @@
       if (timeToCallTimezone) {
         sessionStorage.setItem("timeToCallTimezone", timeToCallTimezone);
         console.log("[sessionStorage] Saved timeToCallTimezone:", timeToCallTimezone);
+      }
+      if (zip) {
+        sessionStorage.setItem("zip", zip);
+        console.log("[sessionStorage] Saved zip:", zip);
       }
 
       // Save grouped object for TY page logic
