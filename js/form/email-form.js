@@ -103,12 +103,23 @@
       const phoneFull = $form.find("#FullPhone").val();
       const firstName = $form.find('input[name="Pr-nom"]').val();
       const lastName = $form.find('input[name="Nom"]').val();
+      
+      const timeToCallLabel = $form.find('#time-to-call-label').val() || "";
+      const timeToCallValue = $form.find('#time-to-call-value').val() || "";
+      const timeToCallStart = $form.find('#time-to-call-start').val() || "";
+      const timeToCallEnd = $form.find('#time-to-call-end').val() || "";
+      const timeToCallTimezone = $form.find('#time-to-call-timezone').val() || "";
 
       const targetGeo = $form.find('[name="Target Geo"]').val() || "";
       const excludeReason = $form.find('[name="Exclude reason"]').val() || "";
 
       console.log("[email form] Target Geo:", targetGeo);
       console.log("[email form] Exclude reason:", excludeReason);
+      console.log("[email form] TimeToCallLabel:", timeToCallLabel);
+      console.log("[email form] TimeToCallValue:", timeToCallValue);
+      console.log("[email form] TimeToCallStart:", timeToCallStart);
+      console.log("[email form] TimeToCallEnd:", timeToCallEnd);
+      console.log("[email form] TimeToCallTimezone:", timeToCallTimezone);
 
       // New exclusion logic overrides old redirect rules
       if (targetGeo === "FALSE" || excludeReason) {
@@ -133,7 +144,39 @@
         sessionStorage.setItem("lastName", lastName);
         console.log("[sessionStorage] Saved last name:", lastName);
       }
+      if (timeToCallLabel) {
+        sessionStorage.setItem("timeToCallLabel", timeToCallLabel);
+        console.log("[sessionStorage] Saved timeToCallLabel:", timeToCallLabel);
+      }      
+      if (timeToCallValue) {
+        sessionStorage.setItem("timeToCallValue", timeToCallValue);
+        console.log("[sessionStorage] Saved timeToCallValue:", timeToCallValue);
+      }
+      if (timeToCallStart) {
+        sessionStorage.setItem("timeToCallStart", timeToCallStart);
+        console.log("[sessionStorage] Saved timeToCallStart:", timeToCallStart);
+      }
+      if (timeToCallEnd) {
+        sessionStorage.setItem("timeToCallEnd", timeToCallEnd);
+        console.log("[sessionStorage] Saved timeToCallEnd:", timeToCallEnd);
+      }
+      if (timeToCallTimezone) {
+        sessionStorage.setItem("timeToCallTimezone", timeToCallTimezone);
+        console.log("[sessionStorage] Saved timeToCallTimezone:", timeToCallTimezone);
+      }
 
+      // Save grouped object for TY page logic
+      const timeToCall = {
+        label: timeToCallLabel,
+        value: timeToCallValue,
+        start: timeToCallStart,
+        end: timeToCallEnd,
+        timezone: timeToCallTimezone
+      };
+    
+      sessionStorage.setItem("timeToCall", JSON.stringify(timeToCall));
+      console.log("[sessionStorage] Saved timeToCall object:", timeToCall);    
+      
       // Build redirect URL (fallback to URL param if sessionStorage is blocked)
       let finalRedirect = formRedirectUrl;
 
