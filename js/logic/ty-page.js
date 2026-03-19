@@ -72,8 +72,14 @@
 
   const isAsap = (timeToCall.value || "").includes("asap");
 
+  // Contacts = default
   if (contactsBtn) {
     contactsBtn.style.display = isAsap ? "inline-flex" : "none";
+  }
+  
+  // Calendar = opposite of asap
+  if (calendarBtn) {
+    calendarBtn.style.display = isAsap ? "none" : "inline-flex";
   }
 
   // ========================
