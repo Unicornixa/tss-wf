@@ -151,7 +151,7 @@
 
       if (show && group === "today" && end) {
         const endMinutes = toMinutes(end);
-        if (endMinutes !== null && endMinutes <= currentMinutes) {
+        if (endMinutes !== null && (endMinutes - currentMinutes) <= 10) {
           show = false;
         }
       }
