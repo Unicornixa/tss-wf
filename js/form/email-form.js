@@ -68,6 +68,8 @@
       form.appendChild(excludeField);
     }
 
+    const timeToCallDropdown = form.querySelector('[data-dropdown="time_to_call"]');
+
     function getLevel() {
       const checked = form.querySelector('[name="Niveau"]:checked');
       if (checked) return checked.value;
@@ -81,10 +83,56 @@
       return "";
     }
 
+    function clearTimeToCallFields() {
+      if (timeToCallDropdown) {
+        timeToCallDropdown.value = "";
+      }
+
+      [
+        "time-to-call-label",
+        "time-to-call-value",
+        "time-to-call-start",
+        "time-to-call-end",
+        "time-to-call-timezone"
+      ].forEach((id) => {
+        const field = form.querySelector(`#${id}`);
+        if (field) field.value = "";
+      });
+
+      console.log("[email form] Time to call fields cleared");
+    }
+
+    function updateTimeToCallVisibility() {
+      const targetGeo = form.querySelector('[name="Target Geo"]')?.value || "";
+      const excludeReason = form.querySelector('[name="Exclude reason"]')?.value || "";
+
+      const shouldHide = targetGeo === "FALSE" || !!excludeReason;
+
+      const wrapper = timeToCallDropdown?.closest(".form_field-wrapper");
+
+      if (!wrapper) {
+        console.warn("[email form] Time to call wrapper not found");
+        return;
+      }
+
+      wrapper.style.display = shouldHide ? "none" : "";
+
+      if (shouldHide) {
+        clearTimeToCallFields();
+      }
+
+      console.log("[email form] Time to call hidden:", shouldHide, {
+        targetGeo,
+        excludeReason
+      });
+    }
+
     function updateExcludeReason() {
       const level = getLevel();
       excludeField.value = level === "Supérieur" ? "Supérieur" : "";
       console.log("[email form] Exclude reason:", excludeField.value || "(empty)");
+
+      updateTimeToCallVisibility();
     }
 
     const levelInputs = form.querySelectorAll('[name="Niveau"]');
@@ -92,10 +140,19 @@
       input.addEventListener("change", updateExcludeReason);
     });
 
+    const targetGeoField = form.querySelector('[name="Target Geo"]');
+    if (targetGeoField) {
+      targetGeoField.addEventListener("change", updateTimeToCallVisibility);
+    }
+
+    updateExcludeReason();
+    updateTimeToCallVisibility();
+
     $(form).on("submit", function () {
       console.log("Form submitted");
 
       updateExcludeReason();
+      updateTimeToCallVisibility();
 
       const $form = $(this);
 
@@ -103,12 +160,12 @@
       const phoneFull = $form.find("#FullPhone").val();
       const firstName = $form.find('input[name="Pr-nom"]').val();
       const lastName = $form.find('input[name="Nom"]').val();
-      
-      const timeToCallLabel = $form.find('#time-to-call-label').val() || "";
-      const timeToCallValue = $form.find('#time-to-call-value').val() || "";
-      const timeToCallStart = $form.find('#time-to-call-start').val() || "";
-      const timeToCallEnd = $form.find('#time-to-call-end').val() || "";
-      const timeToCallTimezone = $form.find('#time-to-call-timezone').val() || "";
+
+      const timeToCallLabel = $form.find("#time-to-call-label").val() || "";
+      const timeToCallValue = $form.find("#time-to-call-value").val() || "";
+      const timeToCallStart = $form.find("#time-to-call-start").val() || "";
+      const timeToCallEnd = $form.find("#time-to-call-end").val() || "";
+      const timeToCallTimezone = $form.find("#time-to-call-timezone").val() || "";
 
       const zip = $form.find('input[data-form-field="zip"]').val() || "";
 
@@ -150,7 +207,7 @@
       if (timeToCallLabel) {
         sessionStorage.setItem("timeToCallLabel", timeToCallLabel);
         console.log("[sessionStorage] Saved timeToCallLabel:", timeToCallLabel);
-      }      
+      }
       if (timeToCallValue) {
         sessionStorage.setItem("timeToCallValue", timeToCallValue);
         console.log("[sessionStorage] Saved timeToCallValue:", timeToCallValue);
@@ -180,10 +237,10 @@
         end: timeToCallEnd,
         timezone: timeToCallTimezone
       };
-    
+
       sessionStorage.setItem("timeToCall", JSON.stringify(timeToCall));
-      console.log("[sessionStorage] Saved timeToCall object:", timeToCall);    
-      
+      console.log("[sessionStorage] Saved timeToCall object:", timeToCall);
+
       // Build redirect URL (fallback to URL param if sessionStorage is blocked)
       let finalRedirect = formRedirectUrl;
 
