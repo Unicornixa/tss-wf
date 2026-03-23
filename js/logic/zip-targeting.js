@@ -1,7 +1,6 @@
 (async function () {
-  
   const ZIP_DATA_URL =
-  "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@a14b71f/data/fr-zip-target-map.json";
+    "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@a14b71f/data/fr-zip-target-map.json";
 
   const zipInput = document.querySelector('[data-form-field="zip"]');
   if (!zipInput) return;
@@ -34,7 +33,6 @@
   }
 
   function getZipStatus(zip) {
-
     if (!zip || zip.length !== 5) {
       return "UNKNOWN";
     }
@@ -51,7 +49,6 @@
   }
 
   function updateTargetGeo() {
-
     const cleanZip = sanitizeZip(zipInput.value);
 
     if (zipInput.value !== cleanZip) {
@@ -62,9 +59,12 @@
 
     targetGeoField.value = status;
 
+    targetGeoField.dispatchEvent(new Event("input", { bubbles: true }));
+    targetGeoField.dispatchEvent(new Event("change", { bubbles: true }));
+
     console.log("[zip]", cleanZip, "→ Target Geo:", status);
   }
-  
+
   zipInput.addEventListener("input", updateTargetGeo);
 
   form.addEventListener(
@@ -74,5 +74,4 @@
     },
     true
   );
-
 })();
