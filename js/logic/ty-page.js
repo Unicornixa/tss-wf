@@ -59,16 +59,24 @@
   // UPDATE UI
   // ========================
   const phoneEls = document.querySelectorAll("[data-phone-display]");
-  const timeEl = document.querySelector("[data-time-label]");
+  const timeEls = document.querySelectorAll("[data-time-label]");
 
-  phoneEls.forEach((el) => { el.textContent = phone.display; });
-  if (timeEl && timeToCall.label) timeEl.textContent = timeToCall.label;
+  phoneEls.forEach((el) => {
+    el.textContent = phone.display;
+  });
+
+  if (timeToCall.label) {
+    timeEls.forEach((el) => {
+      el.textContent = timeToCall.label;
+    });
+  }
 
   // ========================
   // BUTTONS
   // ========================
   const calendarBtn = document.querySelector('[data-button="calendar"]');
   const contactsBtn = document.querySelector('[data-button="contacts"]');
+  const contactsBtn2 = document.querySelector('[data-button="contacts2"]');
   const googleBtn = document.querySelector('[data-button="google"]');
   const outlookBtn = document.querySelector('[data-button="outlook"]');
 
@@ -77,6 +85,11 @@
   // Contacts = default for ASAP
   if (contactsBtn) {
     contactsBtn.style.display = isAsap ? "inline-flex" : "none";
+  }
+
+  // contacts2 = always visible
+  if (contactsBtn2) {
+    contactsBtn2.style.display = "inline-flex";
   }
 
   // Calendar buttons = opposite of ASAP
@@ -145,6 +158,13 @@ END:VCARD`;
 
   if (contactsBtn) {
     contactsBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      downloadVCard();
+    });
+  }
+
+  if (contactsBtn2) {
+    contactsBtn2.addEventListener("click", function (e) {
       e.preventDefault();
       downloadVCard();
     });
