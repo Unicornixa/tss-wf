@@ -18,7 +18,7 @@
     }
   };
 
-  const ZIP_JSON_URL = "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@d38e829/data/fr-zip-state-code-map.json"; //change this to @main later
+  const ZIP_JSON_URL = "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@d38e829/data/fr-zip-state-code-map.json"; // change this to @main later
 
   // ========================
   // GET STORED DATA
@@ -65,21 +65,49 @@
   if (timeEl && timeToCall.label) timeEl.textContent = timeToCall.label;
 
   // ========================
-  // BUTTON LOGIC
+  // BUTTONS
   // ========================
   const calendarBtn = document.querySelector('[data-button="calendar"]');
   const contactsBtn = document.querySelector('[data-button="contacts"]');
+  const googleBtn = document.querySelector('[data-button="google"]');
+  const outlookBtn = document.querySelector('[data-button="outlook"]');
 
   const isAsap = (timeToCall.value || "").includes("asap");
 
-  // Contacts = default
+  // Contacts = default for ASAP
   if (contactsBtn) {
     contactsBtn.style.display = isAsap ? "inline-flex" : "none";
   }
-  
-  // Calendar = opposite of asap
+
+  // Calendar buttons = opposite of ASAP
   if (calendarBtn) {
     calendarBtn.style.display = isAsap ? "none" : "inline-flex";
+  }
+
+  if (googleBtn) {
+    googleBtn.style.display = isAsap ? "none" : "inline-flex";
+  }
+
+  if (outlookBtn) {
+    outlookBtn.style.display = isAsap ? "none" : "inline-flex";
+  }
+
+  // ========================
+  // SHARED EVENT DATA
+  // ========================
+  function getEventData() {
+    if (!timeToCall.start || !timeToCall.end) {
+      console.warn("[TY] Missing timeToCall start/end");
+      return null;
+    }
+
+    const start = new Date(timeToCall.start);
+    const end = new Date(timeToCall.end);
+
+    const title = "Appel avec Top Soutien Scolaire";
+    const description = `Nous vous appelons depuis ${phone.display}. Nous confirmerons vos besoins pour finaliser votre bilan personnalisé et vous proposer le professeur idéal, sans engagement 🎉`;
+
+    return { start, end, title, description };
   }
 
   // ========================
@@ -111,10 +139,15 @@ END:VCARD`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
   }
 
   if (contactsBtn) {
-    contactsBtn.addEventListener("click", downloadVCard);
+    contactsBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      downloadVCard();
+    });
   }
 
   // ========================
@@ -125,22 +158,15 @@ END:VCARD`;
   }
 
   function downloadICS() {
-    if (!timeToCall.start || !timeToCall.end) {
-      console.warn("[TY] Missing timeToCall start/end");
-      return;
-    }
+    const eventData = getEventData();
+    if (!eventData) return;
 
-    const start = new Date(timeToCall.start);
-    const end = new Date(timeToCall.end);
+    const { start, end, title, description } = eventData;
     const now = new Date();
-
     const diffMinutes = (start - now) / 60000;
-
-    const description = `Nous vous appelons depuis ${phone.display}. Nous confirmerons vos besoins pour finaliser votre bilan personnalisé et vous proposer le professeur idéal, sans engagement 🎉`;
 
     let alarm = "";
 
-    // Option A logic
     if (diffMinutes > 15) {
       alarm = `BEGIN:VALARM
 TRIGGER:-PT15M
@@ -151,8 +177,9 @@ END:VALARM`;
 
     const ics = `BEGIN:VCALENDAR
 VERSION:2.0
+PRODID:-//Top Soutien Scolaire//FR
 BEGIN:VEVENT
-SUMMARY:Appel avec Top Soutien Scolaire
+SUMMARY:${title}
 DTSTART:${formatICSDate(start)}
 DTEND:${formatICSDate(end)}
 DESCRIPTION:${description}
@@ -165,14 +192,75 @@ END:VCALENDAR`;
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = "appel.ics";
+    a.download = "appel-top-soutien-scolaire.ics";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
   }
 
   if (calendarBtn) {
-    calendarBtn.addEventListener("click", downloadICS);
+    calendarBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      downloadICS();
+    });
+  }
+
+  // ========================
+  // GOOGLE / OUTLOOK LINKS
+  // ========================
+  function formatGoogleDate(date) {
+    return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  }
+
+  function formatOutlookDate(date) {
+    return date.toISOString().split(".")[0] + "Z";
+  }
+
+  function buildGoogleCalendarUrl() {
+    const eventData = getEventData();
+    if (!eventData) return "#";
+
+    const { start, end, title, description } = eventData;
+
+    const url = new URL("https://calendar.google.com/calendar/render");
+    url.searchParams.set("action", "TEMPLATE");
+    url.searchParams.set("text", title);
+    url.searchParams.set(
+      "dates",
+      `${formatGoogleDate(start)}/${formatGoogleDate(end)}`
+    );
+    url.searchParams.set("details", description);
+
+    return url.toString();
+  }
+
+  function buildOutlookCalendarUrl() {
+    const eventData = getEventData();
+    if (!eventData) return "#";
+
+    const { start, end, title, description } = eventData;
+
+    const url = new URL("https://outlook.office.com/calendar/deeplink/compose");
+    url.searchParams.set("subject", title);
+    url.searchParams.set("startdt", formatOutlookDate(start));
+    url.searchParams.set("enddt", formatOutlookDate(end));
+    url.searchParams.set("body", description);
+
+    return url.toString();
+  }
+
+  if (googleBtn) {
+    googleBtn.setAttribute("href", buildGoogleCalendarUrl());
+    googleBtn.setAttribute("target", "_blank");
+    googleBtn.setAttribute("rel", "noopener");
+  }
+
+  if (outlookBtn) {
+    outlookBtn.setAttribute("href", buildOutlookCalendarUrl());
+    outlookBtn.setAttribute("target", "_blank");
+    outlookBtn.setAttribute("rel", "noopener");
   }
 
   console.log("[TY] Script finished");
