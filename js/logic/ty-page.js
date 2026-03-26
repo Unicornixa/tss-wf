@@ -58,10 +58,10 @@
   // ========================
   // UPDATE UI
   // ========================
-  const phoneEl = document.querySelector("[data-phone-display]");
+  const phoneEls = document.querySelectorAll("[data-phone-display]");
   const timeEl = document.querySelector("[data-time-label]");
 
-  if (phoneEl) phoneEl.textContent = phone.display;
+  phoneEls.forEach((el) => { el.textContent = phone.display; });
   if (timeEl && timeToCall.label) timeEl.textContent = timeToCall.label;
 
   // ========================
