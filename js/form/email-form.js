@@ -1,5 +1,7 @@
 (function () {
   const BASE = "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@main/js";
+  const AB_CLASS = "ab-b";
+  const AB_STORAGE_KEY = "vwo_ab_time_to_call_v1";
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
@@ -45,7 +47,6 @@
     }
 
     const profileInputs = form.querySelectorAll('[name="Profil"]');
-
     profileInputs.forEach((input) => {
       input.addEventListener("change", function () {
         const value =
@@ -70,7 +71,6 @@
 
     const timeToCallDropdown = form.querySelector('[data-dropdown="time_to_call"]');
     const timeToCallWrapper = timeToCallDropdown?.closest(".form_field-wrapper");
-    const abWrapper = form.querySelector('[data-dropdown-wrapper="time_to_call"]');
 
     function getLevel() {
       const checked = form.querySelector('[name="Niveau"]:checked');
@@ -104,16 +104,24 @@
       console.log("[email form] Time to call fields cleared");
     }
 
-    function isElementActuallyHidden(el) {
-      if (!el) return true;
+    function isVariantBByClass() {
+      return document.documentElement.classList.contains(AB_CLASS);
+    }
 
-      const style = window.getComputedStyle(el);
-      return style.display === "none" || el.offsetParent === null;
+    function isVariantBByStorage() {
+      try {
+        return localStorage.getItem(AB_STORAGE_KEY) === "B";
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function isVariantB() {
+      return isVariantBByClass() || isVariantBByStorage();
     }
 
     function isHiddenByAB() {
-      if (!abWrapper) return false;
-      return isElementActuallyHidden(abWrapper);
+      return !isVariantB();
     }
 
     function updateTimeToCallVisibility() {
@@ -122,7 +130,7 @@
 
       const hiddenByBusinessLogic = targetGeo === "FALSE" || !!excludeReason;
       const hiddenByAB = isHiddenByAB();
-      const shouldHide = hiddenByBusinessLogic || hiddenByAB;
+      const shouldClear = hiddenByBusinessLogic || hiddenByAB;
 
       if (!timeToCallWrapper) {
         console.warn("[email form] Time to call wrapper not found");
@@ -131,13 +139,16 @@
 
       timeToCallWrapper.style.display = hiddenByBusinessLogic ? "none" : "";
 
-      if (shouldHide) {
+      if (shouldClear) {
         clearTimeToCallFields();
       }
 
-      console.log("[email form] Time to call hidden:", shouldHide, {
+      console.log("[email form] Time to call hidden:", shouldClear, {
         hiddenByBusinessLogic,
         hiddenByAB,
+        isVariantB: isVariantB(),
+        isVariantBByClass: isVariantBByClass(),
+        isVariantBByStorage: isVariantBByStorage(),
         targetGeo,
         excludeReason
       });
