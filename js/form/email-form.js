@@ -69,6 +69,8 @@
     }
 
     const timeToCallDropdown = form.querySelector('[data-dropdown="time_to_call"]');
+    const timeToCallWrapper = timeToCallDropdown?.closest(".form_field-wrapper");
+    const abWrapper = form.querySelector('[data-dropdown-wrapper="time_to_call"]');
 
     function getLevel() {
       const checked = form.querySelector('[name="Niveau"]:checked');
@@ -102,26 +104,40 @@
       console.log("[email form] Time to call fields cleared");
     }
 
+    function isElementActuallyHidden(el) {
+      if (!el) return true;
+
+      const style = window.getComputedStyle(el);
+      return style.display === "none" || el.offsetParent === null;
+    }
+
+    function isHiddenByAB() {
+      if (!abWrapper) return false;
+      return isElementActuallyHidden(abWrapper);
+    }
+
     function updateTimeToCallVisibility() {
       const targetGeo = form.querySelector('[name="Target Geo"]')?.value || "";
       const excludeReason = form.querySelector('[name="Exclude reason"]')?.value || "";
 
-      const shouldHide = targetGeo === "FALSE" || !!excludeReason;
+      const hiddenByBusinessLogic = targetGeo === "FALSE" || !!excludeReason;
+      const hiddenByAB = isHiddenByAB();
+      const shouldHide = hiddenByBusinessLogic || hiddenByAB;
 
-      const wrapper = timeToCallDropdown?.closest(".form_field-wrapper");
-
-      if (!wrapper) {
+      if (!timeToCallWrapper) {
         console.warn("[email form] Time to call wrapper not found");
         return;
       }
 
-      wrapper.style.display = shouldHide ? "none" : "";
+      timeToCallWrapper.style.display = hiddenByBusinessLogic ? "none" : "";
 
       if (shouldHide) {
         clearTimeToCallFields();
       }
 
       console.log("[email form] Time to call hidden:", shouldHide, {
+        hiddenByBusinessLogic,
+        hiddenByAB,
         targetGeo,
         excludeReason
       });
@@ -145,8 +161,32 @@
       targetGeoField.addEventListener("change", updateTimeToCallVisibility);
     }
 
+    function startABVisibilityWatch() {
+      const MAX_WAIT = 3200;
+      const INTERVAL = 100;
+      const start = Date.now();
+
+      updateTimeToCallVisibility();
+
+      const timer = setInterval(() => {
+        updateTimeToCallVisibility();
+
+        const timedOut = Date.now() - start >= MAX_WAIT;
+        if (timedOut) {
+          clearInterval(timer);
+        }
+      }, INTERVAL);
+    }
+
+    document.addEventListener("DOMContentLoaded", updateTimeToCallVisibility);
+    window.addEventListener("pageshow", function () {
+      updateTimeToCallVisibility();
+      startABVisibilityWatch();
+    });
+
     updateExcludeReason();
     updateTimeToCallVisibility();
+    startABVisibilityWatch();
 
     $(form).on("submit", function () {
       console.log("Form submitted");
@@ -181,13 +221,11 @@
       console.log("[email form] TimeToCallTimezone:", timeToCallTimezone);
       console.log("[email form] Zip:", zip);
 
-      // New exclusion logic overrides old redirect rules
       if (targetGeo === "FALSE" || excludeReason) {
         formRedirectUrl = "/demande-de-tarifs/nsq";
         console.log("[email form] NSQ override applied");
       }
 
-      // Save values to sessionStorage
       if (email) {
         sessionStorage.setItem("email", email);
         console.log("[sessionStorage] Saved email:", email);
@@ -229,7 +267,6 @@
         console.log("[sessionStorage] Saved zip:", zip);
       }
 
-      // Save grouped object for TY page logic
       const timeToCall = {
         label: timeToCallLabel,
         value: timeToCallValue,
@@ -241,7 +278,6 @@
       sessionStorage.setItem("timeToCall", JSON.stringify(timeToCall));
       console.log("[sessionStorage] Saved timeToCall object:", timeToCall);
 
-      // Build redirect URL (fallback to URL param if sessionStorage is blocked)
       let finalRedirect = formRedirectUrl;
 
       try {
@@ -255,12 +291,10 @@
         }
       }
 
-      // Keep redirect attrs updated too
       $form.attr("redirect", finalRedirect);
       $form.attr("data-redirect", finalRedirect);
       $form.data("redirect", finalRedirect);
 
-      // Timeout before redirect
       console.log("Setting timeout for redirect to:", finalRedirect);
       setTimeout(function () {
         console.log("Executing redirect to:", finalRedirect);
