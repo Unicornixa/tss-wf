@@ -7,11 +7,21 @@
   const form = dropdown.closest("form");
   if (!form) return;
 
-  const items = Array.from(dropdown.querySelectorAll(".w-dyn-item"));
+  const allItems = Array.from(dropdown.querySelectorAll(".w-dyn-item"));
+  if (!allItems.length) return;
+
+  const holidayControlItem = allItems.find(
+    (item) => item.getAttribute("holiday-date") === "true"
+  );
+
+  const items = allItems.filter(
+    (item) => item.getAttribute("holiday-date") !== "true"
+  );
+
   if (!items.length) return;
 
   function getOrCreateHiddenField(name, id) {
-    let field = form.querySelector(`[name="${name}"]`);
+    let field = form.querySelector(`input[type="hidden"][name="${name}"]`);
 
     if (!field) {
       field = document.createElement("input");
@@ -74,18 +84,6 @@
     }[weekdayShort];
   }
 
-  function getAllowedDayGroups(weekdayIndex) {
-    if (weekdayIndex >= 1 && weekdayIndex <= 4) {
-      return ["asap", "today", "tomorrow"];
-    }
-
-    if (weekdayIndex === 5) {
-      return ["asap", "today", "monday"];
-    }
-
-    return ["asap", "monday", "tuesday"];
-  }
-
   function pad(num) {
     return String(num).padStart(2, "0");
   }
@@ -105,6 +103,57 @@
     };
   }
 
+  function normalizeDateString(value) {
+    if (!value) return "";
+    return String(value).trim().slice(0, 10);
+  }
+
+  function getDateKey(value) {
+    const normalized = normalizeDateString(value);
+    if (!normalized) return null;
+
+    const parts = normalized.split("-");
+    if (parts.length !== 3) return null;
+
+    const [year, month, day] = parts.map(Number);
+    if (!year || !month || !day) return null;
+
+    return year * 10000 + month * 100 + day;
+  }
+
+  function getHolidayRange() {
+    if (!holidayControlItem) return null;
+
+    const startRaw = holidayControlItem.getAttribute("holiday-date-start") || "";
+    const endRaw = holidayControlItem.getAttribute("holiday-date-end") || "";
+
+    const start = normalizeDateString(startRaw);
+    const end = normalizeDateString(endRaw);
+
+    if (!start || !end) return null;
+
+    const startKey = getDateKey(start);
+    const endKey = getDateKey(end);
+
+    if (startKey === null || endKey === null) return null;
+
+    return {
+      start,
+      end,
+      startKey,
+      endKey
+    };
+  }
+
+  function isDateInHolidayRange(isoDate, holidayRange) {
+    if (!holidayRange || !isoDate) return false;
+
+    const dateKey = getDateKey(isoDate);
+    if (dateKey === null) return false;
+
+    return dateKey >= holidayRange.startKey && dateKey <= holidayRange.endKey;
+  }
+
   function getTargetDate(group, now) {
     const w = getParisWeekdayIndex(now.weekdayShort);
 
@@ -118,6 +167,24 @@
 
     if (group === "tuesday") {
       let diff = (2 - w + 7) % 7;
+      if (diff === 0) diff = 7;
+      return addDays(now.year, now.month, now.day, diff);
+    }
+
+    if (group === "wednesday") {
+      let diff = (3 - w + 7) % 7;
+      if (diff === 0) diff = 7;
+      return addDays(now.year, now.month, now.day, diff);
+    }
+
+    if (group === "thursday") {
+      let diff = (4 - w + 7) % 7;
+      if (diff === 0) diff = 7;
+      return addDays(now.year, now.month, now.day, diff);
+    }
+
+    if (group === "friday") {
+      let diff = (5 - w + 7) % 7;
       if (diff === 0) diff = 7;
       return addDays(now.year, now.month, now.day, diff);
     }
@@ -136,10 +203,83 @@
     return h * 60 + m;
   }
 
+  function getBaseAllowedDayGroups(weekdayIndex) {
+    if (weekdayIndex >= 1 && weekdayIndex <= 4) {
+      return ["asap", "today", "tomorrow"];
+    }
+
+    if (weekdayIndex === 5) {
+      return ["asap", "today", "monday"];
+    }
+
+    return ["asap", "monday", "tuesday"];
+  }
+
+  function getFallbackDaySequence(weekdayIndex) {
+    if (weekdayIndex >= 1 && weekdayIndex <= 4) {
+      return ["tomorrow", "monday", "tuesday", "wednesday", "thursday", "friday"];
+    }
+
+    if (weekdayIndex === 5) {
+      return ["monday", "tuesday", "wednesday", "thursday", "friday"];
+    }
+
+    return ["monday", "tuesday", "wednesday", "thursday", "friday"];
+  }
+
+  function getAllowedDayGroups(now, holidayRange) {
+    const weekdayIndex = getParisWeekdayIndex(now.weekdayShort);
+    const baseAllowed = getBaseAllowedDayGroups(weekdayIndex);
+    const fallbackSequence = getFallbackDaySequence(weekdayIndex);
+
+    const finalAllowed = [];
+    const usedGroups = new Set();
+
+    baseAllowed.forEach((group) => {
+      if (group === "asap") {
+        finalAllowed.push(group);
+        usedGroups.add(group);
+        return;
+      }
+
+      const targetDate = getTargetDate(group, now);
+      const isoDate = targetDate
+        ? getIsoDate(targetDate.year, targetDate.month, targetDate.day)
+        : "";
+
+      if (!isDateInHolidayRange(isoDate, holidayRange)) {
+        finalAllowed.push(group);
+        usedGroups.add(group);
+        return;
+      }
+
+      const replacement = fallbackSequence.find((candidateGroup) => {
+        if (usedGroups.has(candidateGroup)) return false;
+
+        const candidateDate = getTargetDate(candidateGroup, now);
+        const candidateIso = candidateDate
+          ? getIsoDate(candidateDate.year, candidateDate.month, candidateDate.day)
+          : "";
+
+        if (!candidateIso) return false;
+        if (isDateInHolidayRange(candidateIso, holidayRange)) return false;
+
+        return true;
+      });
+
+      if (replacement) {
+        finalAllowed.push(replacement);
+        usedGroups.add(replacement);
+      }
+    });
+
+    return finalAllowed;
+  }
+
   function applyFiltering() {
     const now = getParisNowParts();
-    const weekday = getParisWeekdayIndex(now.weekdayShort);
-    const allowed = getAllowedDayGroups(weekday);
+    const holidayRange = getHolidayRange();
+    const allowed = getAllowedDayGroups(now, holidayRange);
     const currentMinutes = now.hour * 60 + now.minute;
 
     items.forEach((item) => {
@@ -152,6 +292,15 @@
       if (show && group === "today" && end) {
         const endMinutes = toMinutes(end);
         if (endMinutes !== null && (endMinutes - currentMinutes) <= 10) {
+          show = false;
+        }
+      }
+
+      if (show) {
+        const date = getTargetDate(group, now);
+        const isoDate = date ? getIsoDate(date.year, date.month, date.day) : "";
+
+        if (group !== "asap" && isDateInHolidayRange(isoDate, holidayRange)) {
           show = false;
         }
       }
@@ -190,8 +339,8 @@
 
   function getDefaultItem() {
     return items.find(
-      (i) => !i.hidden && i.dataset.value === "asap"
-    ) || items.find((i) => !i.hidden);
+      (item) => !item.hidden && item.dataset.value === "asap"
+    ) || items.find((item) => !item.hidden);
   }
 
   function bindClicks() {
