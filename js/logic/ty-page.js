@@ -18,7 +18,7 @@
     }
   };
 
-  const ZIP_JSON_URL = "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@d38e829/data/fr-zip-state-code-map.json"; // change this to @main later
+  const ZIP_JSON_URL = "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@main/data/fr-zip-state-code-map.json";
 
   // ========================
   // GET STORED DATA
