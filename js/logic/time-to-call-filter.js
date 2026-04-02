@@ -103,30 +103,55 @@
     };
   }
 
-  function compareIsoDates(a, b) {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
+  function normalizeDateString(value) {
+    if (!value) return "";
+    return String(value).trim().slice(0, 10);
+  }
+
+  function getDateKey(value) {
+    const normalized = normalizeDateString(value);
+    if (!normalized) return null;
+
+    const parts = normalized.split("-");
+    if (parts.length !== 3) return null;
+
+    const [year, month, day] = parts.map(Number);
+    if (!year || !month || !day) return null;
+
+    return year * 10000 + month * 100 + day;
   }
 
   function getHolidayRange() {
     if (!holidayControlItem) return null;
 
-    const start = holidayControlItem.getAttribute("holiday-date-start") || "";
-    const end = holidayControlItem.getAttribute("holiday-date-end") || "";
+    const startRaw = holidayControlItem.getAttribute("holiday-date-start") || "";
+    const endRaw = holidayControlItem.getAttribute("holiday-date-end") || "";
+
+    const start = normalizeDateString(startRaw);
+    const end = normalizeDateString(endRaw);
 
     if (!start || !end) return null;
 
-    return { start, end };
+    const startKey = getDateKey(start);
+    const endKey = getDateKey(end);
+
+    if (startKey === null || endKey === null) return null;
+
+    return {
+      start,
+      end,
+      startKey,
+      endKey
+    };
   }
 
   function isDateInHolidayRange(isoDate, holidayRange) {
     if (!holidayRange || !isoDate) return false;
 
-    return (
-      compareIsoDates(isoDate, holidayRange.start) >= 0 &&
-      compareIsoDates(isoDate, holidayRange.end) <= 0
-    );
+    const dateKey = getDateKey(isoDate);
+    if (dateKey === null) return false;
+
+    return dateKey >= holidayRange.startKey && dateKey <= holidayRange.endKey;
   }
 
   function getTargetDate(group, now) {
