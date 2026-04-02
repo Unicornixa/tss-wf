@@ -1,6 +1,6 @@
 (async function () {
   const ZIP_DATA_URL =
-    "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@a14b71f/data/fr-zip-target-map.json";
+    "https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@main/data/fr-zip-state-code-map.json";
 
   const zipInput = document.querySelector('[data-form-field="zip"]');
   if (!zipInput) return;
