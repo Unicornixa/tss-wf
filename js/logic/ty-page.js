@@ -74,6 +74,7 @@
   // ========================
   // BUTTONS
   // ========================
+  const calendarTrigger = document.querySelector('[data-button="calendar-trigger"]');
   const calendarBtn = document.querySelector('[data-button="calendar"]');
   const contactsBtn = document.querySelector('[data-button="contacts"]');
   const contactsBtn2 = document.querySelector('[data-button="contacts2"]');
@@ -81,6 +82,10 @@
   const outlookBtn = document.querySelector('[data-button="outlook"]');
 
   const isAsap = (timeToCall.value || "").includes("asap");
+
+  if (calendarTrigger) {
+    calendarTrigger.style.display = isAsap ? "none" : "inline-flex";
+  }
 
   // Contacts = default for ASAP
   if (contactsBtn) {
