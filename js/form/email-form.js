@@ -320,7 +320,7 @@
     loadScript(`${BASE}/validation/phone-validation.js`),
     loadScript(`${BASE}/validation/email-validation.js`),
     loadScript(`${BASE}/validation/zip-validation.js`),
-    loadScript(`${BASE}/logic/zip-targeting.js`),
+    loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@1f05dda/js/logic/zip-targeting.js`),
     loadScript(`${BASE}/logic/zip-dropdown.js`),
     loadScript(`https://cdn.jsdelivr.net/gh/unicornixa/tss-wf@7237239/js/logic/time-to-call-filter.js`) 
   ])
